@@ -7,7 +7,7 @@
 - 提醒并补充容易遗漏的失败窗口：外部请求成功但写库前崩溃、worker lease 过期、旧 worker 覆盖新状态、幂等键并发竞争。
 - 帮助比较自定义同步 worker 与 Celery/RabbitMQ，并说明生产环境引入 Broker 时需要 Transactional Outbox 和幂等消费。
 - 生成 FastAPI、SQLAlchemy、Alembic、worker、Docker Compose 和测试的mvp代码，并运行测试和静态检查后修正问题。
-- 帮助二次编写readme和AI usage、整理mvp的启动步骤。
+- 帮助二次编写readme和AI usage、整理mvp的启动步骤、绘制时序图。
 
 ## 没有采纳或没有放进 MVP 的 AI 建议
 

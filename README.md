@@ -8,12 +8,25 @@ PDF明确提到业务系统不关心供应商响应内容，只需要确认通�
 2. 独立 Worker 异步投递，临时失败时重试，并保留最终状态供查询。
 
 ```mermaid
-flowchart LR
-    Business[业务系统] -->|"提交HTTP通知"| API[FastAPI]
-    API -->|"事务持久化"| DB[(PostgreSQL)]
-    Worker[DeliveryWorker] -->|"领取到期任务"| DB
-    Worker -->|"HTTP(S)"| Vendor[外部供应商]
-    Worker -->|"更新结果"| DB
+sequenceDiagram
+    participant Business as 业务系统
+    participant API as 通知 API
+    participant DB as PostgreSQL
+    participant Worker as Delivery Worker
+    participant Vendor as 外部供应商
+
+    Business->>API: POST /v1/deliveries
+    API->>DB: 校验幂等键并持久化
+    DB-->>API: 事务提交成功
+    API-->>Business: 202 Accepted + delivery_id
+
+    loop 异步投递
+        Worker->>DB: 领取到期任务（SKIP LOCKED）
+        DB-->>Worker: 请求快照 + lease
+        Worker->>Vendor: HTTP(S) 请求
+        Vendor-->>Worker: HTTP 状态码
+        Worker->>DB: 更新 delivered / retry / dead
+    end
 ```
 
 ### 选择解决的问题
