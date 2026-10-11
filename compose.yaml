@@ -1,0 +1,48 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: callback
+      POSTGRES_USER: callback
+      POSTGRES_PASSWORD: callback
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U callback -d callback"]
+      interval: 2s
+      timeout: 2s
+      retries: 15
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  migrate:
+    build: .
+    command: alembic upgrade head
+    environment: &service-env
+      DATABASE_URL: postgresql+psycopg://callback:callback@postgres:5432/callback
+      ALLOWED_HOSTS: '["httpbin.org","example.com"]'
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  api:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment: *service-env
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  worker:
+    build: .
+    command: python -m app.worker
+    restart: unless-stopped
+    environment: *service-env
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+volumes:
+  postgres-data:
